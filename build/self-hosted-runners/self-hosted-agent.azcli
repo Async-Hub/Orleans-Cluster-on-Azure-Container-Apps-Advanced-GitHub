@@ -1,0 +1,21 @@
+# Run a self-hosted runner in Docker: 
+
+# Create Personal Access Token
+
+# Bash Syntax
+# Warning! Doing Docker within a Docker by using Docker socket has 
+# serious security implications. The code inside the container can 
+# now run as root on your Docker host. Please be very careful.
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+    -e GITHUB_ORG_URL=https://github.com/<organization name> \
+    -e GITHUB_RUNNER_NAME=01_Debian-12.2 \
+    -e GITHUB_ORG_TOKEN=<TOKEN> --name 01_Debian-12.2 github-actions-runner-debian-12.2:23072024
+
+# Bash Syntax
+# Warning! Doing Docker within a Docker by using Docker socket has 
+# serious security implications. The code inside the container can 
+# now run as root on your Docker host. Please be very careful.
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+    -e GITHUB_ORG_URL=https://github.com/<organization name> \
+    -e GITHUB_RUNNER_NAME=01_Playwright-1.44.0 \
+    -e GITHUB_ORG_TOKEN=<TOKEN> --name 01_Playwright-1.44.0 github-actions-runner-playwright-1.x:1.45.0.23072024

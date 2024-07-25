@@ -1,0 +1,227 @@
+on: [push]
+
+env:
+  appNamePrefix: 'shoppingapp1'
+
+jobs:
+  Build_Solution:
+    runs-on: [self-hosted, dotnet, resharper-cli]
+    env:
+      buildConfiguration: Release
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: dotnet restore ShoppingApp.sln
+      - name: Install ReSharper CLI
+        run: dotnet tool update -g JetBrains.ReSharper.GlobalTools
+      - name: 'Inspect Code with ReSharper CLI'
+        run: |
+          export PATH=$PATH:/resharpercli
+          jb inspectcode ShoppingApp.sln -f="Html;Xml" --profile="ShoppingApp.sln.DotSettings" \
+            -o="inspect-code-output" --properties:Configuration=$buildConfiguration
+      - name: 'Analyze ReSharper CLI Results'
+        shell: pwsh
+        run: ./AnalyzeReSharperCLIResults.ps1
+      - name: Build_Solution
+        run: dotnet build ShoppingApp.sln --configuration Release --no-restore
+      - name: Run Integration Tests
+        run: > 
+          dotnet test test/ShoppingApp.Tests --no-restore --verbosity normal --logger trx 
+          --results-directory "IntegrationTestsResults"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Integration Tests Results
+          path: IntegrationTestsResults
+      # Packing Infrastructure Artifacts Stage
+      - uses: actions/upload-artifact@v3
+        with:
+          name: infrastructure
+          path: ${{ github.workspace }}/**/deploy/azure-container-apps
+
+##################### Provision Azure Container Registry Stage #####################
+  Provision_Azure_Container_Registry:
+    needs: Build_Solution
+    runs-on: [self-hosted, azure-cli]
+    env:
+      resourceGroupName: 'rg-shopping-app-main'
+      location: 'eastus'
+    outputs:
+      acrName: ${{ steps.step1.outputs.acrName }}
+      acrResourceGroupName: ${{ env.resourceGroupName }}
+      acrUrl: ${{ steps.step1.outputs.acrUrl }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: 'infrastructure'
+          path: ${{ github.workspace }}/infrastructure
+      - name: Log infrastructure download
+        run: ls -R
+      - name: Log in with Azure
+        uses: azure/login@v1
+        with: 
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+      - id: step1
+        name: Create Azure Container Registry
+        run: |
+          az --version
+          az group create --name $resourceGroupName --location $location
+          ACR_CREDENTIALS=$(az deployment group create --resource-group $resourceGroupName \
+            --template-file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/azure-container-registry.bicep \
+            --parameters appNamePrefix=$appNamePrefix --query properties.outputs)
+          # Retrieve the output values from the deployment
+          ACR_NAME=$(jq --raw-output '.acrName.value' <<< $ACR_CREDENTIALS)
+          ACR_URL=$(jq --raw-output '.acrUrl.value' <<< $ACR_CREDENTIALS)
+          if [[ -z $ACR_URL ]]; then
+            echo "Error: ACR_URL is empty"
+            exit 1
+          fi
+          echo "Setting ACR_CREDENTIALS for output"
+          echo "ACR credentials is: $ACR_NAME $ACR_URL"
+          env | sort
+          echo "acrName=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acrUrl=$ACR_URL" >> $GITHUB_OUTPUT
+  
+##################### Publishing Solution Artifacts Stage #####################
+  Publishing_Solution_Artifacts:
+    runs-on: [self-hosted, azure-cli]
+    needs: Provision_Azure_Container_Registry
+    outputs:
+      semVer: ${{ steps.step1.outputs.semVer }}
+    env:
+      acrUrl: ${{ needs.Provision_Azure_Container_Registry.outputs.acrUrl }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v3
+        with:
+          name: 'infrastructure'
+          path: ${{ github.workspace }}/infrastructure
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0
+        with:
+          versionSpec: '6.x'
+          includePrerelease: true
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0
+        with:
+          useConfigFile: true
+          configFilePath: ${{ github.workspace }}/GitVersion.yml
+      - name: Log in with Azure
+        uses: azure/login@v1
+        with: 
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+      - name: 'Build and push images to Azure Container Registry'
+        id: step1
+        env:
+          acrUrl: ${{ needs.Provision_Azure_Container_Registry.outputs.acrUrl }}
+          semVer: ${{ steps.gitversion.outputs.semVer }} 
+        run: |
+          az acr login --name ${{ env.acrUrl }}
+          docker build -t "${{ env.acrUrl }}/shoppingapp/silohost:${{ env.semVer }}" \
+          -f ${{ github.workspace }}/src/ShoppingApp.SiloHost/Dockerfile . \
+          --build-arg assemblyInformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+          docker push "${{ env.acrUrl }}/shoppingapp/silohost:${{ env.semVer }}"
+          docker build -t "${{ env.acrUrl }}/shoppingapp/webui:${{ env.semVer }}" \
+          -f ${{ github.workspace }}/src/ShoppingApp.WebUI/Dockerfile . \
+          --build-arg assemblyInformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+          docker push "${{ env.acrUrl }}/shoppingapp/webui:${{ env.semVer }}"
+          echo "Setting semVer for output"
+          echo "semVer=${{ env.semVer }}" >> $GITHUB_OUTPUT
+
+##################### Provision Infrastructure Stages #####################
+  Provision_Staging_Infrastructure:
+    environment:
+      name: 'Staging'
+    runs-on: [self-hosted, azure-cli]
+    needs: [ Provision_Azure_Container_Registry, Publishing_Solution_Artifacts ]
+    outputs:
+      webUiCaUrl: ${{ steps.step1.outputs.webUiCaUrl }}
+    env:
+      # Staging 'sa1, sa2 sa3, ...'
+      # s - staging a - advanced => sa
+      nameSuffix: 'sa1'
+      location: 'eastus'
+      acrName: ${{ needs.Provision_Azure_Container_Registry.outputs.acrName }}
+      acrResourceGroupName: ${{ needs.Provision_Azure_Container_Registry.outputs.acrResourceGroupName }}
+      acrUrl: ${{ needs.Provision_Azure_Container_Registry.outputs.acrUrl }}
+      semVer: ${{ needs.Publishing_Solution_Artifacts.outputs.semVer }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: 'infrastructure'
+          path: ${{ github.workspace }}/infrastructure
+      - name: Log in with Azure
+        uses: azure/login@v1
+        with: 
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+      - name: Provision Infrastructure
+        id: step1
+        run: |
+          az --version
+          AZ_ACCOUNT=$(az account show)
+          servicePrincipalId=$(jq --raw-output '.id' <<< $AZ_ACCOUNT)
+          resourceGroupName='rg-${{ env.appNamePrefix }}-${{ env.nameSuffix }}'
+          az group create --name $resourceGroupName --location ${{ env.location }}
+          DEPLOYMENT_OUTPUT=$(az deployment group create --resource-group $resourceGroupName \
+            --template-file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/solution-infrastructure.bicep \
+            --parameters appNamePrefix='${{ env.appNamePrefix }}' nameSuffix='${{ env.nameSuffix }}' semVer='${{ env.semVer }}' \
+            sqlAdministratorPassword='Passw@rd1+' acrName=${{ env.acrName }} acrUrl=${{ env.acrUrl }} \
+            acrResourceGroupName=${{ env.acrResourceGroupName }} executorSecurityPrincipal=$servicePrincipalId \
+            --query properties.outputs)
+          WEBUI_CA_URL=$(jq --raw-output '.webUiCaUrl.value' <<< $DEPLOYMENT_OUTPUT)
+          echo "webUiCaUrl=$WEBUI_CA_URL" >> $GITHUB_OUTPUT
+
+##################### Launch End To End Testing ##################### 
+  End_To_End_Testing:
+    runs-on: [self-hosted, dotnet, playwright-1.x]
+    needs: [ Provision_Staging_Infrastructure ]
+    env:
+      webUiCaUrl: ${{ needs.Provision_Staging_Infrastructure.outputs.webUiCaUrl }}
+    steps:
+      - uses: actions/checkout@v3
+      - name:  Create a manifest file
+        run: dotnet new tool-manifest
+      - name: Install Playwright CLI
+        run: dotnet tool install Microsoft.Playwright.CLI
+      - name: Build ShoppingApp.E2ETests
+        run: dotnet build test/ShoppingApp.E2ETests
+      - name: Install Playwright
+        run: dotnet tool run playwright install
+      - name: Run E2E Tests
+        run: |
+          dotnet test test/ShoppingApp.E2ETests \
+            -- 'TestRunParameters.Parameter(name="webUiCaUrl", value="'"$webUiCaUrl"'")'
+
+##################### Launch Load Testing #####################
+  Load_Testing:
+    runs-on: [self-hosted, dotnet]
+    needs: [ Provision_Staging_Infrastructure ]
+    env:
+      loadTestConfigFile: 'test/ShoppingApp.LoadTests/ShoppingApp.WebUI.DefaultTests.yaml'
+      webUiCaUrl: ${{ needs.Provision_Staging_Infrastructure.outputs.webUiCaUrl }}
+      # Staging 'sa1, sa2 sa3, ...'
+      # s - staging a - advanced => sa
+      nameSuffix: 'sa1'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to Azure
+        uses: azure/login@v1
+        continue-on-error: false
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Run Load Testing
+        uses: azure/load-testing@v1
+        with:
+          loadTestConfigFile: ${{ env.loadTestConfigFile }}
+          loadTestResource: 'lt-${{ env.appNamePrefix }}-${{ env.nameSuffix }}'
+          resourceGroup: 'rg-${{ env.appNamePrefix }}-${{ env.nameSuffix }}'
+          env: |
+            [
+              {
+                "name": "webUIUrl",
+                "value": "${{ env.webUiCaUrl }}"
+              }
+            ]

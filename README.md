@@ -58,11 +58,11 @@ Start Docker service.
 sudo service docker start
 sudo service docker status
 ```
-You can clone the solution you have imported https://github.com/[Org or User Name]/orleans-on-ctap1.git into C:\ drive on your Windows machine ([Git CLI](https://git-scm.com/download/win) is required)
+You can clone the solution you have imported https://github.com/Replace_This_With_Org_or_User_Name/orleans-on-ctap1.git into C:\ drive on your Windows machine ([Git CLI](https://git-scm.com/download/win) is required)
 ```
 mkdir C:\Repos
 cd C:\Repos
-git clone https://github.com/[Org or User Name]/orleans-on-ctap1.git
+git clone https://github.com/Replace_This_With_Org_or_User_Name/orleans-on-ctap1.git
 ```
 and interop with it from Ubuntu-22.04 by the following way:
 ```

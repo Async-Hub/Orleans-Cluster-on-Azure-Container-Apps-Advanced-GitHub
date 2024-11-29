@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright/python:v1.45.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy
 
 ENV GITHUB_RUNNER_LABELS="playwright-1.x,dotnet"
 ENV GITHUB_RUNNER_GROUP="Default"
@@ -12,12 +12,12 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommend
     curl git iputils-ping jq lsb-release openssh-client \
     software-properties-common
 
-# Install the .NET SDK 8.0
+# Install the .NET SDK 9.0
 RUN apt-get install wget
 RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 RUN dpkg -i packages-microsoft-prod.deb
 RUN rm packages-microsoft-prod.deb
-RUN apt-get update && apt-get install -y dotnet-sdk-8.0
+RUN apt-get update && apt-get install -y dotnet-sdk-9.0
 
 # Install Playwright
 RUN dotnet tool install --global Microsoft.Playwright.CLI --version 1.2.3
@@ -33,9 +33,9 @@ RUN useradd -m acru1 && \
     chown -R acru1:acru1 /acr
 
 # Download the latest runner package
-RUN curl -o actions-runner-linux-x64-2.317.0.tar.gz \
-  -L https://github.com/actions/runner/releases/download/v2.317.0/actions-runner-linux-x64-2.317.0.tar.gz
-RUN tar xzf ./actions-runner-linux-x64-2.317.0.tar.gz
+RUN curl -o actions-runner-linux-x64-2.321.0.tar.gz \
+  -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-x64-2.321.0.tar.gz
+RUN tar xzf ./actions-runner-linux-x64-2.321.0.tar.gz
 
 # Run a self-hosted Azure Pipelines agent in Docker
 COPY ./start.sh .

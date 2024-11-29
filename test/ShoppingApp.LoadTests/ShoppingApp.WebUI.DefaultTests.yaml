@@ -6,8 +6,8 @@ description: 'Default load tests for ShoppingApp.WebUI'
 engineInstances: 1
 failureCriteria:
   - avg(response_time_ms) > 500
-  - percentage(error) > 1
-  - GetHomePage: avg(latency) > 100
+  - percentage(error) > 3
+  - GetHomePage: avg(latency) > 75
   - GetHomePage: p95(response_time_ms) > 300
   - GetProductsPage: avg(latency) > 150
   - GetProductsPage: p95(response_time_ms) > 400

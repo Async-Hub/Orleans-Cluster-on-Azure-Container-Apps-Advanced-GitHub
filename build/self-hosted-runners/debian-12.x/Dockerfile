@@ -1,4 +1,4 @@
-FROM debian:12.2-slim
+FROM debian:12.7-slim
 
 ENV GITHUB_RUNNER_LABELS="azure-cli,dotnet,resharper-cli"
 ENV GITHUB_RUNNER_GROUP="Default"
@@ -26,16 +26,22 @@ COPY ./az_cli_install.sh .
 RUN chmod +x az_cli_install.sh
 RUN ./az_cli_install.sh
 ENV AZURE_CLI=True
+# Fetch the latest Bicep CLI binary
+RUN curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+# Mark it as executable
+RUN chmod +x ./bicep
+# Add bicep to your PATH (requires admin)
+RUN mv ./bicep /usr/local/bin/bicep
 
-# Install the .NET SDK 8.0
+# Install the .NET SDK 9.0
 RUN apt-get install wget
 RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 RUN dpkg -i packages-microsoft-prod.deb
 RUN rm packages-microsoft-prod.deb
-RUN apt-get update && apt-get install -y dotnet-sdk-8.0
+RUN apt-get update && apt-get install -y dotnet-sdk-9.0
 
 # https://blog.jetbrains.com/dotnet/2020/07/16/resharper-command-line-tools-cross-platform-and-global-tools/#usage-as-global-tools
-RUN dotnet tool install JetBrains.ReSharper.GlobalTools --tool-path /resharpercli --version 2024.1.4
+RUN dotnet tool install JetBrains.ReSharper.GlobalTools --tool-path /resharpercli --version 2024.3.0
 
 # Install PowerShell
 RUN apt-get install -y powershell
@@ -60,9 +66,9 @@ ENV TARGETARCH=linux-x64
 WORKDIR /acr
 
 # Download the latest runner package
-RUN curl -o actions-runner-linux-x64-2.317.0.tar.gz \
-  -L https://github.com/actions/runner/releases/download/v2.317.0/actions-runner-linux-x64-2.317.0.tar.gz
-RUN tar xzf ./actions-runner-linux-x64-2.317.0.tar.gz
+RUN curl -o actions-runner-linux-x64-2.321.0.tar.gz \
+  -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-x64-2.321.0.tar.gz
+RUN tar xzf ./actions-runner-linux-x64-2.321.0.tar.gz
 
 # Run a self-hosted Azure Pipelines agent in Docker
 COPY ./start.sh .

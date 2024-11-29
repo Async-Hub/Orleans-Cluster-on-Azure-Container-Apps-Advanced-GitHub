@@ -137,5 +137,5 @@ Add the JSON [as a GitHub repository secret](https://learn.microsoft.com/en-us/a
 
 Replace the content of the file located at **.github/workflows/github-actions.yml** with the content of the **github-actions.yml** file located in the root directory.
 
-5. Run the actions.
+### 5. Run the actions.
 Commit the changes, wait for GitHub Actions to complete the deployment process, and then enjoy the solution.

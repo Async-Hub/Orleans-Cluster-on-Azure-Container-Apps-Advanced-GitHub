@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Orleans.Concurrency;
 using ShoppingApp.Abstractions;
@@ -41,32 +41,35 @@ public sealed class ShoppingCartGrain(
     {
       if (cart.State.Count == 0)
       {
-        return new CheckoutResult(false, CheckoutFailureReason.EmptyCart, 
+        return new CheckoutResult(false, CheckoutFailureReason.EmptyCart,
           "Your cart is empty.", null);
       }
 
       var cartItems = cart.State.Values.ToList();
       if (cartItems.Any(i => i.Quantity <= 0))
       {
-        return new CheckoutResult(false, CheckoutFailureReason.Unknown, 
+        return new CheckoutResult(false, CheckoutFailureReason.Unknown,
           "Cart contains invalid quantities.", null);
       }
 
-      var outOfStockItems = new List<string>();
+      var reservedProducts = new List<(IProductGrain Grain, int Quantity, string ProductName)>();
       foreach (var item in cartItems)
       {
         var productGrain = GrainFactory.GetGrain<IProductGrain>(item.Product.Id);
-        var available = await productGrain.GetProductAvailabilityAsync();
-        if (available < item.Quantity)
+        var (isTaken, _) = await productGrain.TryTakeProductAsync(item.Quantity);
+        if (!isTaken)
         {
-          outOfStockItems.Add(item.Product.Name);
-        }
-      }
+          foreach (var (grain, quantity, _) in reservedProducts)
+          {
+            await grain.ReturnProductAsync(quantity);
+          }
 
-      if (outOfStockItems.Count > 0)
-      {
-        var message = $"Some items are out of stock: {string.Join(", ", outOfStockItems)}.";
-        return new CheckoutResult(false, CheckoutFailureReason.OutOfStock, message, null);
+          var unavailableItems = reservedProducts.Select(x => x.ProductName).Append(item.Product.Name).Distinct();
+          var message = $"Some items are out of stock: {string.Join(", ", unavailableItems)}.";
+          return new CheckoutResult(false, CheckoutFailureReason.OutOfStock, message, null);
+        }
+
+        reservedProducts.Add((productGrain, item.Quantity, item.Product.Name));
       }
 
       var orderId = $"ORD-{Guid.NewGuid():N}";
@@ -92,6 +95,11 @@ public sealed class ShoppingCartGrain(
 
       if (!paymentResult.IsSuccess)
       {
+        foreach (var (grain, quantity, _) in reservedProducts)
+        {
+          await grain.ReturnProductAsync(quantity);
+        }
+
         await orderGrain.UpdateStatusAsync(
             OrderStatus.Failed,
             paymentResult.FailureReason,
@@ -102,36 +110,6 @@ public sealed class ShoppingCartGrain(
             CheckoutFailureReason.PaymentFailed,
             paymentResult.FailureReason ?? "Payment failed.",
             orderId);
-      }
-
-      var decrementedProducts = new List<(IProductGrain Grain, int Quantity)>();
-      try
-      {
-        foreach (var item in cartItems)
-        {
-          var productGrain = GrainFactory.GetGrain<IProductGrain>(item.Product.Id);
-          var (isTaken, _) = await productGrain.TryTakeProductAsync(item.Quantity);
-          if (!isTaken)
-          {
-            throw new InvalidOperationException($"Product '{item.Product.Name}' became unavailable.");
-          }
-
-          decrementedProducts.Add((productGrain, item.Quantity));
-        }
-      }
-      catch (Exception ex)
-      {
-        logger.LogWarning(ex, "Checkout stock update failed for user {UserId}. Rolling back stock updates.", this.GetPrimaryKeyString());
-
-        foreach (var (grain, quantity) in decrementedProducts)
-        {
-          await grain.ReturnProductAsync(quantity);
-        }
-
-        const string message = "Checkout failed because stock changed during payment processing. Please try again.";
-        await orderGrain.UpdateStatusAsync(OrderStatus.Failed, message, paymentResult.TransactionId);
-
-        return new CheckoutResult(false, CheckoutFailureReason.OutOfStock, message, orderId);
       }
 
       cart.State.Clear();

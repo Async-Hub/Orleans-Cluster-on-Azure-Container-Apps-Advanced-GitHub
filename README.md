@@ -35,7 +35,7 @@ we have two options:
 >   - Windows Server 2022/Windows 11 or greater AMD EPYC/Ryzen processor
 > - Enable [nested virtualization](https://learn.microsoft.com/en-us/windows/wsl/faq#can-i-run-wsl-2-in-a-virtual-machine-) on the Virtual Machine
 
-Regardless of the option you chose above, you need to open a terminal on the host (for the first option) or on the VM (for the second option). Then enable WSL 2 and install Ubuntu 22.04 with the following command, typing it in the terminal window:
+Regardless of the option you chose above, you need to open a terminal on the host (for the first option) or on the VM (for the second option). Then enable WSL 2 and install Ubuntu 24.04 with the following command, typing it in the terminal window:
 ```
 wsl --install -d Ubuntu-24.04 --name GHA_Ubuntu-24.04
 ```

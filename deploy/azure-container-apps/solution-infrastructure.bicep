@@ -1,6 +1,6 @@
 @description('A suffix for resource names uniqueness.')
 param nameSuffix string = 'd1'
-param appNamePrefix string ='shoppingapp1'
+param appNamePrefix string = 'shoppingapp1'
 param semVer string = 'latest'
 param location string = resourceGroup().location
 param executorSecurityPrincipal string
@@ -29,7 +29,7 @@ var sqlName = 'sql-${appNamePrefix}-${nameSuffix}'
 var siloHostCaName = 'ctap-${appNamePrefix}-${nameSuffix}'
 
 // Web UI Hosting
-var sigrName='sigr-${appNamePrefix}-${nameSuffix}'
+var sigrName = 'sigr-${appNamePrefix}-${nameSuffix}'
 var keyVaultName = 'kv-${appNamePrefix}-${nameSuffix}'
 var webUiStorageName = 'stwebui${appNamePrefix}${nameSuffix}'
 var webUiStorageBlobContainerName = 'web-ui-data-protection'
@@ -56,7 +56,10 @@ resource loadTestRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
   properties: {
     // Contributor
     // https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'b24988ac-6180-42a0-ab88-20f7382dd24c'
+    )
     principalId: executorSecurityPrincipal
     principalType: 'ServicePrincipal'
   }
@@ -93,7 +96,10 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
   properties: {
     // Owner
     // https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
+    )
     principalId: executorSecurityPrincipal
     principalType: 'ServicePrincipal'
   }
@@ -160,13 +166,16 @@ resource webUiStorageBlobContainer 'Microsoft.Storage/storageAccounts/blobServic
   properties: {}
 }
 
-resource web 'Microsoft.Authorization/roleAssignments@2022-04-01' = { 
+resource web 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: webUiStorage
   name: guid(webUiStorageName)
   properties: {
     // Contributor
     // https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+    )
     principalId: webUiCa.identity.principalId
     principalType: 'ServicePrincipal'
   }
@@ -291,6 +300,7 @@ resource shoppingAppCae 'Microsoft.App/managedEnvironments@2025-07-01' = {
         workloadProfileType: 'Consumption'
       }
     ]
+
     zoneRedundant: false
   }
 }
@@ -305,7 +315,7 @@ resource siloHostCa 'Microsoft.App/containerApps@2025-07-01' = {
     managedEnvironmentId: shoppingAppCae.id
     workloadProfileName: 'Consumption'
     configuration: {
-      activeRevisionsMode: 'Multiple'
+      activeRevisionsMode: 'Single'
       secrets: [
         {
           name: 'acr-password'
@@ -353,8 +363,7 @@ resource siloHostCa 'Microsoft.App/containerApps@2025-07-01' = {
       scale: {
         minReplicas: 1
         maxReplicas: 4
-        rules: [
-        ]
+        rules: []
       }
     }
   }
@@ -399,8 +408,8 @@ resource webUiCa 'Microsoft.App/containerApps@2025-07-01' = {
           image: '${acrUrl}/shoppingapp/webui:${semVer}'
           name: 'web-ui'
           resources: {
-            cpu: json('1')
-            memory: '2Gi'
+            cpu: json('0.5')
+            memory: '1Gi'
           }
           env: [
             {
@@ -408,8 +417,8 @@ resource webUiCa 'Microsoft.App/containerApps@2025-07-01' = {
               value: 'DefaultEndpointsProtocol=https;AccountName=${storageName};AccountKey=${listKeys(resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', storageName), '2019-04-01').keys[0].value};EndpointSuffix=core.windows.net'
             }
             {
-                name: 'AZURE_SIGNALR_CONNECTION_STRING'
-                value: signalR.listKeys().primaryConnectionString
+              name: 'AZURE_SIGNALR_CONNECTION_STRING'
+              value: signalR.listKeys().primaryConnectionString
             }
             {
               name: 'APPINSIGHTS_CONNECTION_STRING'
@@ -427,7 +436,7 @@ resource webUiCa 'Microsoft.App/containerApps@2025-07-01' = {
         }
       ]
       scale: {
-        minReplicas: 1
+        minReplicas: 0
         maxReplicas: 2
         rules: [
           {

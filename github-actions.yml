@@ -52,6 +52,10 @@ jobs:
           path: ${{ github.workspace }}/infrastructure
       - name: Log infrastructure download
         run: ls -R
+      - name: Validate Bicep templates
+        run: |
+          az bicep build --file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/azure-container-registry.bicep
+          az bicep build --file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/solution-infrastructure.bicep
       - name: Log in with Azure
         uses: azure/login@v1
         with: 

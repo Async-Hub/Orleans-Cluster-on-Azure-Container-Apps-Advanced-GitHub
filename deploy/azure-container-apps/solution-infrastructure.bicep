@@ -222,14 +222,6 @@ resource vnet 'Microsoft.Network/virtualNetworks@2025-05-01' = {
         name: 'ShoppingApp'
         properties: {
           addressPrefix: '10.0.0.0/21'
-          delegations: [
-            {
-              name: 'acaDelegation'
-              properties: {
-                serviceName: 'Microsoft.App/environments'
-              }
-            }
-          ]
         }
       }
     ]
@@ -286,26 +278,22 @@ resource sqlShoppingAppMain 'Microsoft.Sql/servers/databases@2023-08-01' = {
   }
 }
 
-resource shoppingAppCae 'Microsoft.App/managedEnvironments@2025-07-01' = {
+resource shoppingAppCae 'Microsoft.App/managedEnvironments@2022-10-01' = {
   name: shoppingAppCaeName
   location: location
+  sku: {
+    name: 'Consumption'
+  }
   tags: tags
   properties: {
     vnetConfiguration: {
       infrastructureSubnetId: vnet.properties.subnets[0].id
     }
-    workloadProfiles: [
-      {
-        name: 'Consumption'
-        workloadProfileType: 'Consumption'
-      }
-    ]
-
     zoneRedundant: false
   }
 }
 
-resource siloHostCa 'Microsoft.App/containerApps@2025-07-01' = {
+resource siloHostCa 'Microsoft.App/containerApps@2022-10-01' = {
   name: siloHostCaName
   location: location
   dependsOn: [
@@ -313,7 +301,6 @@ resource siloHostCa 'Microsoft.App/containerApps@2025-07-01' = {
   ]
   properties: {
     managedEnvironmentId: shoppingAppCae.id
-    workloadProfileName: 'Consumption'
     configuration: {
       activeRevisionsMode: 'Multiple'
       secrets: [
@@ -369,7 +356,7 @@ resource siloHostCa 'Microsoft.App/containerApps@2025-07-01' = {
   }
 }
 
-resource webUiCa 'Microsoft.App/containerApps@2025-07-01' = {
+resource webUiCa 'Microsoft.App/containerApps@2022-10-01' = {
   name: webUiCaName
   location: location
   identity: {
@@ -380,7 +367,6 @@ resource webUiCa 'Microsoft.App/containerApps@2025-07-01' = {
   ]
   properties: {
     managedEnvironmentId: shoppingAppCae.id
-    workloadProfileName: 'Consumption'
     configuration: {
       activeRevisionsMode: 'Single'
       secrets: [

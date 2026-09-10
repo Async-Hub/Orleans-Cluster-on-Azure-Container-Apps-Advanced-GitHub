@@ -351,3 +351,4 @@ MigrationBackup/
 /JetBrains.ReSharper.CommandLineTools.*
 /caches
 /InspectCodeOutput
+deploy/azure-container-apps/*.json

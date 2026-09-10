@@ -52,10 +52,6 @@ jobs:
           path: ${{ github.workspace }}/infrastructure
       - name: Log infrastructure download
         run: ls -R
-      - name: Validate Bicep templates
-        run: |
-          az bicep build --file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/azure-container-registry.bicep
-          az bicep build --file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/solution-infrastructure.bicep
       - name: Log in with Azure
         uses: azure/login@v1
         with: 
@@ -64,6 +60,8 @@ jobs:
         name: Create Azure Container Registry
         run: |
           az --version
+          az bicep build --file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/azure-container-registry.bicep
+          az bicep build --file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/solution-infrastructure.bicep
           az group create --name $resourceGroupName --location $location
           ACR_CREDENTIALS=$(az deployment group create --resource-group $resourceGroupName \
             --template-file ${{ github.workspace }}/infrastructure/deploy/azure-container-apps/azure-container-registry.bicep \

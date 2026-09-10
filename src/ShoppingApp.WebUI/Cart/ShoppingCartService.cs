@@ -30,4 +30,13 @@ public sealed class ShoppingCartService(IHttpContextAccessor httpContextAccessor
         TryUseGrain<IShoppingCartGrain, Task>(
             cart => cart.RemoveItemAsync(product),
             () => Task.CompletedTask);
+
+    public Task<CheckoutResult> CheckoutAsync() =>
+        TryUseGrain<IShoppingCartGrain, Task<CheckoutResult>>(
+            cart => cart.CheckoutAsync(),
+            () => Task.FromResult(new CheckoutResult(
+                false,
+                CheckoutFailureReason.Unknown,
+                "Unable to checkout.",
+                null)));
 }

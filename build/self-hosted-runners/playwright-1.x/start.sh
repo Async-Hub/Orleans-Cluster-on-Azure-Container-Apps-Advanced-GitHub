@@ -25,7 +25,7 @@ print_header() {
 cleanup() {
   if [ -e config.sh ]; then
     print_header "Cleanup. Removing Actions Runner..."
-    ./config.sh remove --token ${GITHUB_ORG_TOKEN}
+    ./config.sh remove --unattended --token ${GITHUB_ORG_TOKEN}
   fi
 }
 

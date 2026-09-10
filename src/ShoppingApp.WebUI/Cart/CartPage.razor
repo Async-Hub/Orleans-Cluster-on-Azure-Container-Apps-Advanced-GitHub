@@ -5,8 +5,8 @@
     <MudText Typo="Typo.h4">Shopping Cart</MudText>
     <MudSpacer />
     <MudButton Variant="Variant.Outlined" StartIcon=@Icons.Material.Filled.RemoveShoppingCart
-        Disabled=@(_cartItems?.Any() is false) Size=@Size.Large
-        Color="Color.Secondary" OnClick=@EmptyCartAsync>
+               Disabled=@(_cartItems?.Any() is false || _isProcessingCheckout) Size=@Size.Large
+               Color="Color.Secondary" OnClick=@EmptyCartAsync>
         Empty Cart
     </MudButton>
 </MudToolBar>
@@ -16,14 +16,16 @@
         <MudStack Spacing="8">
             @foreach (var item in _cartItems ?? [])
             {
-                <ShoppingCartItem CartItem=@item
-                    OnRemoved=@OnItemRemovedAsync
-                    OnUpdated=@OnItemUpdatedAsync />
+                <ShoppingCartItem CartItem=@item OnRemoved=@OnItemRemovedAsync OnUpdated=@OnItemUpdatedAsync />
             }
-            <MudDivider/>
+            <MudDivider />
         </MudStack>
     </MudItem>
     <MudItem xs="12" md="4">
-        <ShoppingCartSummary Items=_cartItems />
+        <ShoppingCartSummary Items="_cartItems"
+                             OnCheckoutRequested="CheckoutAsync"
+                             IsProcessing="_isProcessingCheckout"
+                             CheckoutFeedbackMessage="@_checkoutFeedbackMessage"
+                             CheckoutFeedbackSeverity="@_checkoutFeedbackSeverity" />
     </MudItem>
 </MudGrid>

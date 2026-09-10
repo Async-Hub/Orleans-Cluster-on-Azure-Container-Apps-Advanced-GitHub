@@ -87,14 +87,17 @@ Bash
 gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
   /orgs/PUT_YOUR_ORG_NAME_HERE/actions/runners/registration-token
 ```
-Run Debian or Playwright based runner by using the following command:
+Run Debian or Ubuntu based runner by using the following command:
 ```
-sudo docker run -v /var/run/docker.sock:/var/run/docker.sock \
+SOCKET_GID=$(stat -c '%g' /var/run/docker.sock)
+sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+    --group-add $SOCKET_GID \
     -e GITHUB_ORG_URL=https://github.com/<organization name> \
-    -e GITHUB_RUNNER_NAME=01_Debian-12.7 \
-    -e GITHUB_ORG_TOKEN=<TOKEN> --name 01_Debian-12.7 github-actions-runner-debian-12.7:29112024
+    -e GITHUB_RUNNER_GROUP="Default" \
+    -e GITHUB_RUNNER_NAME=01_Debian-12.12 \
+    -e GITHUB_ORG_TOKEN=<TOKEN> --name 01_Debian-12.12 github-actions-runner-debian-12.12:28082026
 ```
-The syntax above uses PowerShell. If you use Bash shell, just replace "`" (backtick) with "\\" (backslash).  
+The syntax above uses Bash. If you use PowerShell shell, just replace "\" (backslash) with "`" (backtick).  
   
 >Warning! Doing Docker within a Docker by using Docker socket has serious security implications. The code inside the container can now run as root on your Docker host. Please be very careful.
 

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.47.16.16243",
-      "templateHash": "6169338629872574266"
+      "templateHash": "12487926387972360256"
     }
   },
   "parameters": {
@@ -448,8 +448,8 @@
               "image": "[format('{0}/shoppingapp/webui:{1}', parameters('acrUrl'), parameters('semVer'))]",
               "name": "web-ui",
               "resources": {
-                "cpu": "[json('0.5')]",
-                "memory": "1Gi"
+                "cpu": "[json('1')]",
+                "memory": "2Gi"
               },
               "env": [
                 {

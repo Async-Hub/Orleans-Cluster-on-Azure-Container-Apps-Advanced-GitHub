@@ -9,6 +9,7 @@ namespace ShoppingApp.Tests;
 public class CheckoutTests(ClusterFixture clusterFixture)
 {
     private const string ForcedFailurePrefixEnvironmentVariable = "SHOPPINGAPP_FAKEPAYMENT_FORCE_FAILURE_FOR_USERID_PREFIX";
+    private const string PaymentDelayMsEnvironmentVariable = "SHOPPINGAPP_FAKEPAYMENT_DELAY_MS";
     private TestCluster Cluster { get; } = clusterFixture.Cluster;
 
     [Fact]
@@ -61,7 +62,9 @@ public class CheckoutTests(ClusterFixture clusterFixture)
     {
         var userId = $"force-payment-failure-{Guid.NewGuid():N}";
         var previousPrefix = Environment.GetEnvironmentVariable(ForcedFailurePrefixEnvironmentVariable);
+        var previousDelay = Environment.GetEnvironmentVariable(PaymentDelayMsEnvironmentVariable);
         Environment.SetEnvironmentVariable(ForcedFailurePrefixEnvironmentVariable, "force-payment-failure-");
+        Environment.SetEnvironmentVariable(PaymentDelayMsEnvironmentVariable, "0");
 
         try
         {
@@ -88,6 +91,7 @@ public class CheckoutTests(ClusterFixture clusterFixture)
         finally
         {
             Environment.SetEnvironmentVariable(ForcedFailurePrefixEnvironmentVariable, previousPrefix);
+            Environment.SetEnvironmentVariable(PaymentDelayMsEnvironmentVariable, previousDelay);
         }
     }
 

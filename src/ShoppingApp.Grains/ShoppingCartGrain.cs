@@ -37,6 +37,9 @@ public sealed class ShoppingCartGrain(
 
   async Task<CheckoutResult> IShoppingCartGrain.CheckoutAsync()
   {
+    var reservedProducts = new List<(IProductGrain Grain, int Quantity, string ProductName)>();
+    var paymentSucceeded = false;
+
     try
     {
       if (cart.State.Count == 0)
@@ -52,17 +55,13 @@ public sealed class ShoppingCartGrain(
           "Cart contains invalid quantities.", null);
       }
 
-      var reservedProducts = new List<(IProductGrain Grain, int Quantity, string ProductName)>();
       foreach (var item in cartItems)
       {
         var productGrain = GrainFactory.GetGrain<IProductGrain>(item.Product.Id);
         var (isTaken, _) = await productGrain.TryTakeProductAsync(item.Quantity);
         if (!isTaken)
         {
-          foreach (var (grain, quantity, _) in reservedProducts)
-          {
-            await grain.ReturnProductAsync(quantity);
-          }
+          await RestoreReservedProductsAsync(reservedProducts);
 
           var unavailableItems = reservedProducts.Select(x => x.ProductName).Append(item.Product.Name).Distinct();
           var message = $"Some items are out of stock: {string.Join(", ", unavailableItems)}.";
@@ -95,10 +94,7 @@ public sealed class ShoppingCartGrain(
 
       if (!paymentResult.IsSuccess)
       {
-        foreach (var (grain, quantity, _) in reservedProducts)
-        {
-          await grain.ReturnProductAsync(quantity);
-        }
+        await RestoreReservedProductsAsync(reservedProducts);
 
         await orderGrain.UpdateStatusAsync(
             OrderStatus.Failed,
@@ -112,6 +108,7 @@ public sealed class ShoppingCartGrain(
             orderId);
       }
 
+      paymentSucceeded = true;
       cart.State.Clear();
       await cart.ClearStateAsync();
 
@@ -122,6 +119,11 @@ public sealed class ShoppingCartGrain(
     }
     catch (Exception ex)
     {
+      if (!paymentSucceeded)
+      {
+        await RestoreReservedProductsAsync(reservedProducts);
+      }
+
       logger.LogError(ex, "Unexpected checkout failure for user {UserId}", this.GetPrimaryKeyString());
       return new CheckoutResult(false, CheckoutFailureReason.Unknown, "Unexpected checkout error.", null);
     }
@@ -144,6 +146,14 @@ public sealed class ShoppingCartGrain(
     if (cart.State.Remove(product.Id))
     {
       await cart.WriteStateAsync();
+    }
+  }
+
+  private static async Task RestoreReservedProductsAsync(IEnumerable<(IProductGrain Grain, int Quantity, string ProductName)> reservedProducts)
+  {
+    foreach (var (grain, quantity, _) in reservedProducts)
+    {
+      await grain.ReturnProductAsync(quantity);
     }
   }
 

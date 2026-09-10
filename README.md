@@ -97,7 +97,7 @@ sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
     -e GITHUB_RUNNER_NAME=01_Debian-12.12 \
     -e GITHUB_ORG_TOKEN=<TOKEN> --name 01_Debian-12.12 github-actions-runner-debian-12.12:28082026
 ```
-The syntax above uses Bash. If you use PowerShell shell, just replace "\" (backslash) with "`" (backtick).  
+The example above uses Bash syntax. Use an equivalent PowerShell command if you run it from PowerShell.  
   
 >Warning! Doing Docker within a Docker by using Docker socket has serious security implications. The code inside the container can now run as root on your Docker host. Please be very careful.
 

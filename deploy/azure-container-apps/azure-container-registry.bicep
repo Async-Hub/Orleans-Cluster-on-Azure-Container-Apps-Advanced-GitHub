@@ -11,7 +11,7 @@ var tags = {
 }
 
 // Azure Container Registry
-resource acr 'Microsoft.ContainerRegistry/registries@2022-12-01' = {
+resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' = {
   name: acrName
   location: location
   tags: tags

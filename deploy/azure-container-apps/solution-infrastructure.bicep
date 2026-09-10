@@ -39,12 +39,12 @@ var tags = {
   Purpose: 'Tuning Blazor Server'
 }
 
-resource acr 'Microsoft.ContainerRegistry/registries@2022-12-01' existing = {
+resource acr 'Microsoft.ContainerRegistry/registries@2025-11-01' existing = {
   name: acrName
   scope: resourceGroup(acrResourceGroupName)
 }
 
-resource loadTest 'Microsoft.LoadTestService/loadTests@2022-12-01' = {
+resource loadTest 'Microsoft.LoadTestService/loadTests@2024-12-01-preview' = {
   name: loadTestName
   location: location
   tags: tags
@@ -135,7 +135,7 @@ resource keyVaultAccessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2022-0
   }
 }
 
-resource storage 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+resource storage 'Microsoft.Storage/storageAccounts@2025-06-01' = {
   name: storageName
   location: location
   tags: tags
@@ -145,7 +145,7 @@ resource storage 'Microsoft.Storage/storageAccounts@2022-05-01' = {
   kind: 'StorageV2'
 }
 
-resource webUiStorage 'Microsoft.Storage/storageAccounts@2022-05-01' = {
+resource webUiStorage 'Microsoft.Storage/storageAccounts@2025-06-01' = {
   name: webUiStorageName
   location: location
   tags: tags
@@ -155,10 +155,9 @@ resource webUiStorage 'Microsoft.Storage/storageAccounts@2022-05-01' = {
   kind: 'StorageV2'
 }
 
-resource webUiStorageBlobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-05-01' = {
+resource webUiStorageBlobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = {
   name: '${webUiStorage.name}/default/${webUiStorageBlobContainerName}'
-  properties: {
-  }
+  properties: {}
 }
 
 resource web 'Microsoft.Authorization/roleAssignments@2022-04-01' = { 
@@ -173,7 +172,7 @@ resource web 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
-resource log 'Microsoft.OperationalInsights/workspaces@2020-08-01' = {
+resource log 'Microsoft.OperationalInsights/workspaces@2025-07-01' = {
   name: logName
   location: location
   tags: tags
@@ -199,7 +198,7 @@ resource appi 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-resource vnet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
+resource vnet 'Microsoft.Network/virtualNetworks@2025-05-01' = {
   name: vnetName
   location: location
   tags: tags
@@ -214,13 +213,21 @@ resource vnet 'Microsoft.Network/virtualNetworks@2022-05-01' = {
         name: 'ShoppingApp'
         properties: {
           addressPrefix: '10.0.0.0/21'
+          delegations: [
+            {
+              name: 'acaDelegation'
+              properties: {
+                serviceName: 'Microsoft.App/environments'
+              }
+            }
+          ]
         }
       }
     ]
   }
 }
 
-resource signalR 'Microsoft.SignalRService/signalR@2022-02-01' = {
+resource signalR 'Microsoft.SignalRService/signalR@2024-03-01' = {
   name: sigrName
   location: location
 
@@ -240,7 +247,7 @@ resource signalR 'Microsoft.SignalRService/signalR@2022-02-01' = {
   }
 }
 
-resource sqlServer 'Microsoft.Sql/servers@2021-11-01' = {
+resource sqlServer 'Microsoft.Sql/servers@2023-08-01' = {
   name: sqlName
   location: location
   tags: tags
@@ -250,7 +257,7 @@ resource sqlServer 'Microsoft.Sql/servers@2021-11-01' = {
   }
 }
 
-resource sqlServerAllowAllWindowsAzureIps 'Microsoft.Sql/servers/firewallRules@2021-11-01' = {
+resource sqlServerAllowAllWindowsAzureIps 'Microsoft.Sql/servers/firewallRules@2023-08-01' = {
   parent: sqlServer
   name: 'AllowAllWindowsAzureIps'
   properties: {
@@ -259,7 +266,7 @@ resource sqlServerAllowAllWindowsAzureIps 'Microsoft.Sql/servers/firewallRules@2
   }
 }
 
-resource sqlShoppingAppMain 'Microsoft.Sql/servers/databases@2021-11-01' = {
+resource sqlShoppingAppMain 'Microsoft.Sql/servers/databases@2023-08-01' = {
   parent: sqlServer
   name: 'ShoppingAppMain'
   location: location
@@ -270,22 +277,25 @@ resource sqlShoppingAppMain 'Microsoft.Sql/servers/databases@2021-11-01' = {
   }
 }
 
-resource shoppingAppCae 'Microsoft.App/managedEnvironments@2022-10-01' = {
+resource shoppingAppCae 'Microsoft.App/managedEnvironments@2025-07-01' = {
   name: shoppingAppCaeName
   location: location
-  sku: {
-    name: 'Consumption'
-  }
   tags: tags
   properties: {
     vnetConfiguration: {
       infrastructureSubnetId: vnet.properties.subnets[0].id
     }
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
     zoneRedundant: false
   }
 }
 
-resource siloHostCa 'Microsoft.App/containerApps@2022-10-01' = {
+resource siloHostCa 'Microsoft.App/containerApps@2025-07-01' = {
   name: siloHostCaName
   location: location
   dependsOn: [
@@ -293,6 +303,7 @@ resource siloHostCa 'Microsoft.App/containerApps@2022-10-01' = {
   ]
   properties: {
     managedEnvironmentId: shoppingAppCae.id
+    workloadProfileName: 'Consumption'
     configuration: {
       activeRevisionsMode: 'Multiple'
       secrets: [
@@ -349,7 +360,7 @@ resource siloHostCa 'Microsoft.App/containerApps@2022-10-01' = {
   }
 }
 
-resource webUiCa 'Microsoft.App/containerApps@2022-10-01' = {
+resource webUiCa 'Microsoft.App/containerApps@2025-07-01' = {
   name: webUiCaName
   location: location
   identity: {
@@ -360,6 +371,7 @@ resource webUiCa 'Microsoft.App/containerApps@2022-10-01' = {
   ]
   properties: {
     managedEnvironmentId: shoppingAppCae.id
+    workloadProfileName: 'Consumption'
     configuration: {
       activeRevisionsMode: 'Single'
       secrets: [

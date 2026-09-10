@@ -1,47 +1,41 @@
-FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy
+# The image is based on Ubuntu 24.04
+FROM mcr.microsoft.com/playwright/python:v1.61.0-noble
 
+ENV TARGETARCH=linux-x64
 ENV GITHUB_RUNNER_LABELS="playwright-1.x,dotnet"
 ENV GITHUB_RUNNER_GROUP="Default"
 ENV GITHUB_RUNNER_WORKDIR="_work"
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
     apt-transport-https apt-utils ca-certificates \
     curl git iputils-ping jq lsb-release openssh-client \
     software-properties-common
 
 # Install the .NET SDK 9.0
-RUN apt-get install wget
-RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-RUN dpkg -i packages-microsoft-prod.deb
-RUN rm packages-microsoft-prod.deb
-RUN apt-get update && apt-get install -y dotnet-sdk-9.0
-
-# Install Playwright
-RUN dotnet tool install --global Microsoft.Playwright.CLI --version 1.2.3
-
-# Can be 'linux-x64', 'linux-arm64', 'linux-arm', 'rhel.6-x64'.
-ENV TARGETARCH=linux-x64
+RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    rm packages-microsoft-prod.deb && \
+    apt-get update && apt-get install -y dotnet-sdk-9.0
 
 # Actions Runner
 WORKDIR /acr
 
-# Create a new user for the runner
-RUN useradd -m acru1 && \
-    chown -R acru1:acru1 /acr
+# Create u1 user and set up home directory
+RUN useradd -m -d /home/u1 u1
 
 # Download the latest runner package
-RUN curl -o actions-runner-linux-x64-2.321.0.tar.gz \
-  -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-x64-2.321.0.tar.gz
-RUN tar xzf ./actions-runner-linux-x64-2.321.0.tar.gz
+RUN curl -o actions-runner-linux-x64-2.337.0.tar.gz \
+    -L https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz && \
+    tar xzf ./actions-runner-linux-x64-2.337.0.tar.gz
 
-# Run a self-hosted Azure Pipelines agent in Docker
+# Run a self-hosted GitHub Actions runner in Docker
 COPY ./start.sh .
 RUN chmod +x start.sh
 
-# Switch to the acru1 user
-USER acru1
+# Ensure u1 owns everything (runner files were extracted as root) before dropping privileges
+RUN chown -R u1:u1 /acr /home/u1
+USER u1
 
 ENTRYPOINT [ "./start.sh" ]

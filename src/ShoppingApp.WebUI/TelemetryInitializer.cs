@@ -1,22 +1,35 @@
-using Microsoft.ApplicationInsights.Channel;
-using Microsoft.ApplicationInsights.Extensibility;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using ShoppingApp.Common;
 using System.Reflection;
 
 namespace ShoppingApp.WebUI;
 
-internal class TelemetryInitializer : ITelemetryInitializer
+internal static class TelemetryInitializer
 {
-    private readonly string _roleName = "ShoppingApp.WebUI";
-
-    public void Initialize(ITelemetry telemetry)
+    internal static void AddApplicationInsights(this IServiceCollection services, string connectionString)
     {
-        telemetry.Context.Cloud.RoleName = _roleName;
-        // TODO: Make this dynamically assignable from environment variable.
-        telemetry.Context.Cloud.RoleInstance = _roleName;
-
         var assembly = Assembly.GetExecutingAssembly();
         var version = AppInfo.RetrieveInformationalVersion(assembly);
-        telemetry.Context.Component.Version = version;
+        const string roleName = "ShoppingApp.WebUI";
+        var instanceId = $"{roleName}-{DateTimeOffset.UtcNow:yyyyMMddTHHmmssZ}-{System.Guid.NewGuid():N}";
+
+        services.AddApplicationInsightsTelemetry(options =>
+        {
+            options.ConnectionString = connectionString;
+        });
+        
+        services.ConfigureOpenTelemetryTracerProvider((_, tracerBuilder) =>
+            tracerBuilder.ConfigureResource(r => r.AddService(
+                serviceName: roleName,
+                serviceInstanceId: instanceId,
+                serviceVersion: version)));
+        
+        services.ConfigureOpenTelemetryLoggerProvider((_, loggerBuilder) =>
+            loggerBuilder.ConfigureResource(r => r.AddService(
+                serviceName: roleName,
+                serviceInstanceId: instanceId,
+                serviceVersion: version)));
     }
 }

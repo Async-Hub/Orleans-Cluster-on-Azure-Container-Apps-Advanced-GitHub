@@ -28,6 +28,6 @@ public static class GlobalConfig
 
         public static string InstrKey =>
             Environment.GetEnvironmentVariable(EnvironmentVariables.InstrumentationKey) ??
-            string.Empty;
+            "InstrumentationKey=00000000-0000-0000-0000-000000000000";
     }
 }

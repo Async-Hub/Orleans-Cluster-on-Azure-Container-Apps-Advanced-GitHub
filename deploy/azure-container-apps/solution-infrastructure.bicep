@@ -55,7 +55,6 @@ resource loadTestRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
   name: guid(loadTestName)
   properties: {
     // Contributor
-    // https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       'b24988ac-6180-42a0-ab88-20f7382dd24c'
@@ -95,7 +94,6 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
   name: guid(keyVaultName)
   properties: {
     // Owner
-    // https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       '8e3af657-a8ff-443c-a75c-2fe8c4bcb635'
@@ -222,6 +220,14 @@ resource vnet 'Microsoft.Network/virtualNetworks@2025-05-01' = {
         name: 'ShoppingApp'
         properties: {
           addressPrefix: '10.0.0.0/21'
+          delegations: [
+            {
+              name: 'acaDelegation'
+              properties: {
+                serviceName: 'Microsoft.App/environments'
+              }
+            }
+          ]
         }
       }
     ]
@@ -278,22 +284,26 @@ resource sqlShoppingAppMain 'Microsoft.Sql/servers/databases@2023-08-01' = {
   }
 }
 
-resource shoppingAppCae 'Microsoft.App/managedEnvironments@2022-10-01' = {
+resource shoppingAppCae 'Microsoft.App/managedEnvironments@2025-07-01' = {
   name: shoppingAppCaeName
   location: location
-  sku: {
-    name: 'Consumption'
-  }
   tags: tags
   properties: {
     vnetConfiguration: {
       infrastructureSubnetId: vnet.properties.subnets[0].id
     }
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
+
     zoneRedundant: false
   }
 }
 
-resource siloHostCa 'Microsoft.App/containerApps@2022-10-01' = {
+resource siloHostCa 'Microsoft.App/containerApps@2025-07-01' = {
   name: siloHostCaName
   location: location
   dependsOn: [
@@ -301,8 +311,9 @@ resource siloHostCa 'Microsoft.App/containerApps@2022-10-01' = {
   ]
   properties: {
     managedEnvironmentId: shoppingAppCae.id
+    workloadProfileName: 'Consumption'
     configuration: {
-      activeRevisionsMode: 'Multiple'
+      activeRevisionsMode: 'Single'
       secrets: [
         {
           name: 'acr-password'
@@ -356,7 +367,7 @@ resource siloHostCa 'Microsoft.App/containerApps@2022-10-01' = {
   }
 }
 
-resource webUiCa 'Microsoft.App/containerApps@2022-10-01' = {
+resource webUiCa 'Microsoft.App/containerApps@2025-07-01' = {
   name: webUiCaName
   location: location
   identity: {
@@ -367,6 +378,7 @@ resource webUiCa 'Microsoft.App/containerApps@2022-10-01' = {
   ]
   properties: {
     managedEnvironmentId: shoppingAppCae.id
+    workloadProfileName: 'Consumption'
     configuration: {
       activeRevisionsMode: 'Single'
       secrets: [
@@ -394,8 +406,8 @@ resource webUiCa 'Microsoft.App/containerApps@2022-10-01' = {
           image: '${acrUrl}/shoppingapp/webui:${semVer}'
           name: 'web-ui'
           resources: {
-            cpu: json('1')
-            memory: '2Gi'
+            cpu: json('0.5')
+            memory: '1Gi'
           }
           env: [
             {
@@ -422,7 +434,7 @@ resource webUiCa 'Microsoft.App/containerApps@2022-10-01' = {
         }
       ]
       scale: {
-        minReplicas: 1
+        minReplicas: 0
         maxReplicas: 2
         rules: [
           {

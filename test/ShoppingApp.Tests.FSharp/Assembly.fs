@@ -1,9 +1,9 @@
 ﻿module Assembly 
 
 open Orleans
-open ShoppingApp.Grains
+open global.ShoppingApp.Grains
 open System
-open ShoppingApp.Abstractions
+open global.ShoppingApp.Abstractions
 
 [<assembly: Orleans.ApplicationPartAttribute("ShoppingApp.Grains")>]
 ()

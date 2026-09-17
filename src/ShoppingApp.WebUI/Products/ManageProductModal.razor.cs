@@ -7,13 +7,13 @@ namespace ShoppingApp.WebUI.Products;
 
 public partial class ManageProductModal
 {
-    bool _isSaving;
-    MudForm? _form;
+    private bool _isSaving;
+    private MudForm? _form;
 
     public ProductDetails Product { get; set; } = new();
 
-    [CascadingParameter]
-    MudDialogInstance? MudDialog { get; set; }
+    [CascadingParameter] 
+    private IMudDialogInstance? MudDialog { get; set; }
 
     [Parameter, EditorRequired]
     public EventCallback<ProductDetails> ProductUpdated { get; set; }
@@ -21,8 +21,8 @@ public partial class ManageProductModal
     [Inject]
     public IDialogService DialogService { get; set; } = null!;
 
-    public void Open(string title, Func<ProductDetails, Task> onProductUpdated) =>
-        DialogService.Show<ManageProductModal>(
+    public async Task OpenAsync(string title, Func<ProductDetails, Task> onProductUpdated) =>
+        await DialogService.ShowAsync<ManageProductModal>(
             title, new DialogParameters()
             {
                 {
@@ -35,21 +35,20 @@ public partial class ManageProductModal
 
     private void Bogus() => Product = Product.GetBogusFaker().Generate();
 
-    private Task Save()
+  private async Task Save()
+  {
+    if (_form is not null)
     {
-        if (_form is not null)
-        {
-            _form.Validate();
-            if (_form.IsValid)
-            {
-                return OnValidSubmitAsync();
-            }
-        }
+      await _form.ValidateAsync();
 
-        return Task.CompletedTask;
+      if (_form.IsValid)
+      {
+        await OnValidSubmitAsync();
+      }
     }
+  }
 
-    private async Task OnValidSubmitAsync()
+  private async Task OnValidSubmitAsync()
     {
         if (!string.IsNullOrWhiteSpace(Product.Id) && ProductUpdated.HasDelegate)
         {

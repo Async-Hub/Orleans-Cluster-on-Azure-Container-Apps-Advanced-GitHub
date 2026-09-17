@@ -1,5 +1,4 @@
 using Azure.Data.Tables;
-using Microsoft.ApplicationInsights.Extensibility;
 using MudBlazor.Services;
 using Orleans.Configuration;
 using ShoppingApp.WebUI;
@@ -10,6 +9,9 @@ using ShoppingApp.WebUI.Services;
 using ShoppingApp.WebUI.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Application Insights.
+builder.Services.AddApplicationInsights(GlobalConfig.AppInsightsConnectionString);
 
 // Scalability on Azure Container Apps for Blazor based WebUI.
 if (!builder.Environment.IsDevelopment())
@@ -37,13 +39,6 @@ builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<ComponentStateChangedObserver>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddLocalStorageServices();
-
-// Application Insights.
-builder.Services.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
-builder.Services.AddApplicationInsightsTelemetry(options =>
-{
-    options.ConnectionString = GlobalConfig.AppInsightsConnectionString;
-});
 
 // Configure Microsoft Orleans Client
 if (builder.Environment.IsDevelopment())

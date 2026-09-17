@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/deploy/" />
+  <Folder Name="/deploy/azure-container-apps/">
+    <File Path="deploy/azure-container-apps/azure-container-registry.bicep" />
+    <File Path="deploy/azure-container-apps/solution-infrastructure.bicep" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/ShoppingApp.Abstractions/ShoppingApp.Abstractions.csproj" />
+    <Project Path="src/ShoppingApp.Common/ShoppingApp.Common.csproj" />
+    <Project Path="src/ShoppingApp.Grains/ShoppingApp.Grains.csproj" />
+    <Project Path="src/ShoppingApp.SiloHost/ShoppingApp.SiloHost.csproj" />
+    <Project Path="src/ShoppingApp.WebUI/ShoppingApp.WebUI.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/ShoppingApp.E2ETests/ShoppingApp.E2ETests.csproj" />
+    <Project Path="test/ShoppingApp.Tests.FSharp/ShoppingApp.Tests.FSharp.fsproj" />
+    <Project Path="test/ShoppingApp.Tests/ShoppingApp.Tests.csproj" />
+  </Folder>
+  <Folder Name="/test/ShoppingApp.LoadTests/">
+    <File Path="test/ShoppingApp.LoadTests/ShoppingApp.WebUI.DefaultTests.jmx" />
+    <File Path="test/ShoppingApp.LoadTests/ShoppingApp.WebUI.DefaultTests.yaml" />
+  </Folder>
+</Solution>

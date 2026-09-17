@@ -5,7 +5,7 @@
 This is the modernized and up to date version of  sample provided by Microsoft ([Orleans Cluster on Azure Container Apps](https://github.com/Azure-Samples/Orleans-Cluster-on-Azure-Container-Apps)). It uses:
 
 * Fully automated GitHub Actions based CI/CD to deploy from code to cloud with minimal effort
-* Blazor Server model which works on .NET 9 and Microsoft Orleans 9
+* Blazor Server model which works on .NET 10 and Microsoft Orleans 10
 * Scalable server-side Blazor app on Azure Container Apps
 * Azure SignalR Service, Azure Key Vault, Azure Storage Account, Azure Application Insights, Azure Load Testing, Microsoft Playwright for E2E Tests, and many more
 

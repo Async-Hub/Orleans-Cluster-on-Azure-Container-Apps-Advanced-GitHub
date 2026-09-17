@@ -2,7 +2,6 @@ FROM debian:12.12-slim
 
 ENV TARGETARCH=linux-x64
 ENV GITHUB_RUNNER_LABELS="azure-cli,dotnet,resharper-cli"
-ENV GITHUB_RUNNER_GROUP="Default"
 ENV GITHUB_RUNNER_WORKDIR="_work"
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
@@ -28,12 +27,12 @@ RUN chmod +x az_cli_install.sh && ./az_cli_install.sh && \
     chmod +x /usr/local/bin/bicep
 ENV AZURE_CLI=True
 
-# Install the .NET SDK 9.0
+# Install the .NET SDK 10.0
 RUN apt-get install wget && \
     wget https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
     dpkg -i packages-microsoft-prod.deb && \
     rm packages-microsoft-prod.deb && \
-    apt-get update && apt-get install -y dotnet-sdk-9.0
+    apt-get update && apt-get install -y dotnet-sdk-10.0
 
 # https://blog.jetbrains.com/dotnet/2020/07/16/resharper-command-line-tools-cross-platform-and-global-tools/#usage-as-global-tools
 RUN dotnet tool install JetBrains.ReSharper.GlobalTools --tool-path /resharpercli --version 2026.2.0

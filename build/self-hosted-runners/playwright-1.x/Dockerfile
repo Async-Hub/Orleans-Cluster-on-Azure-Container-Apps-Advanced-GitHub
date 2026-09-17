@@ -3,7 +3,6 @@ FROM mcr.microsoft.com/playwright/python:v1.61.0-noble
 
 ENV TARGETARCH=linux-x64
 ENV GITHUB_RUNNER_LABELS="playwright-1.x,dotnet"
-ENV GITHUB_RUNNER_GROUP="Default"
 ENV GITHUB_RUNNER_WORKDIR="_work"
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
@@ -13,11 +12,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     curl git iputils-ping jq lsb-release openssh-client \
     software-properties-common
 
-# Install the .NET SDK 9.0
-RUN wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
-    dpkg -i packages-microsoft-prod.deb && \
-    rm packages-microsoft-prod.deb && \
-    apt-get update && apt-get install -y dotnet-sdk-9.0
+# Install the .NET SDK 10.0
+RUN add-apt-repository ppa:dotnet/backports && \
+    apt-get update && apt-get install -y dotnet-sdk-10.0
 
 # Actions Runner
 WORKDIR /acr

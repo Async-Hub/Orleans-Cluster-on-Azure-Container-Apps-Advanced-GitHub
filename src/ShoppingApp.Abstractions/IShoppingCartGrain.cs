@@ -27,4 +27,9 @@ public interface IShoppingCartGrain : IGrainWithStringKey
     /// Removes all items from the shopping cart.
     /// </summary>
     Task EmptyCartAsync();
+
+    /// <summary>
+    /// Performs checkout by validating stock, processing payment, creating the order and clearing cart on success.
+    /// </summary>
+    Task<CheckoutResult> CheckoutAsync();
 }

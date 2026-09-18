@@ -1,2 +1,3 @@
-# sudo docker build -t github-actions-runner-debian-12.7:29112024 .
-# sudo docker build -t github-actions-runner-playwright-1.x:1.45.0.29112024 .
+# sudo docker build -t github-actions-runner-ubuntu-24.04:28082026 .
+# sudo docker build -t github-actions-runner-debian-12.12:28082026 .
+# sudo docker build -t github-actions-runner-playwright-1.x:1.61.0.28082026 .

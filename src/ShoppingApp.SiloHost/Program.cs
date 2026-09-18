@@ -1,22 +1,14 @@
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
 using Azure.Data.Tables;
-using Microsoft.ApplicationInsights.Extensibility;
 using Orleans.Configuration;
 using ShoppingApp.Common;
 using ShoppingApp.Grains;
 using ShoppingApp.SiloHost;
 using ShoppingApp.SiloHost.MicrosoftSqlServer;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Application Insights.
-builder.Services.AddSingleton<ITelemetryInitializer, TelemetryInitializer>();
-builder.Services.AddApplicationInsightsTelemetry(options =>
-{
-	options.ConnectionString = GlobalConfig.AppInsightsConnectionString;
-});
 
 builder.Host.UseOrleans((context, siloBuilder) =>
 {
@@ -28,7 +20,10 @@ builder.Host.UseOrleans((context, siloBuilder) =>
 	}
 	else
 	{
-		const int siloPort = 11111;
+        // Application Insights.
+        siloBuilder.Services.AddApplicationInsights(GlobalConfig.AppInsightsConnectionString);
+
+        const int siloPort = 11111;
 		const int gatewayPort = 30000;
 		var hostName = Dns.GetHostName();
 		var ipEntry = Dns.GetHostEntry(hostName);

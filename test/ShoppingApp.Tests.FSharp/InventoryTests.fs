@@ -1,10 +1,9 @@
 module Tests
 
 open Initialization
-open ShoppingApp.Abstractions
+open global.ShoppingApp.Abstractions
 open System
 open Xunit
-open Xunit.Abstractions
 
 [<Collection(CurrentAssembly.ClusterFixture)>]
 type InventoryTests(clusterFixture: ClusterFixture, output: ITestOutputHelper) =

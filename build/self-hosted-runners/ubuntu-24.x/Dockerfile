@@ -1,4 +1,4 @@
-FROM debian:12.12-slim
+FROM ubuntu:24.04
 
 ENV TARGETARCH=linux-x64
 ENV GITHUB_RUNNER_LABELS="azure-cli,dotnet,resharper-cli"
@@ -29,7 +29,7 @@ ENV AZURE_CLI=True
 
 # Install the .NET SDK 10.0
 RUN apt-get install wget && \
-    wget https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+  wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
     dpkg -i packages-microsoft-prod.deb && \
     rm packages-microsoft-prod.deb && \
     apt-get update && apt-get install -y dotnet-sdk-10.0
@@ -41,20 +41,14 @@ ENV JETBRAINS_RESHARPER_GLOBALTOOLS=2026.2.0
 # Install PowerShell
 RUN apt-get install -y powershell
 
-# Install Docker Engine on Debian
+# Install Docker Engine on Ubuntu
 # Use Docker within a Docker container
 # Warning!!! Doing this has serious security implications.
 # The code inside the container can now run as root on your Docker host.
-RUN install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-    chmod a+r /etc/apt/keyrings/docker.gpg && \
-    echo \
-    "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-    "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-    tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-RUN apt-get update && \
-    yes Y | apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
+  && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable" \
+  && apt-cache policy docker-ce \
+  && apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # Actions Runner
 WORKDIR /acr

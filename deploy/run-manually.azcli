@@ -1,0 +1,30 @@
+$resourceGroupName = "rg-shoppingapp1"
+$nameSuffix = "sa2"
+$templateFile = ".\solution-infrastructure.bicep"
+
+$appNamePrefix = "shoppingapp1"
+$semVer = "0.0.1-ci.68"
+$sqlAdministratorPassword = "Passw@rd1+"
+
+$acrName = "acrshoppingapp1"
+$acrUrl = "acrshoppingapp1.azurecr.io"
+$acrResourceGroupName = "rg-shopping-app-main"
+
+# az ad sp show --id <appId> --query id -o tsv
+$executorSecurityPrincipal = az ad sp show --id 3db3460f-bda5-4519-92db-4d504db9f8f0 --query id -o tsv
+
+$rgName = "$resourceGroupName-$nameSuffix"
+
+az group create --name $rgName --location 'francecentral'
+az deployment group create `
+  --resource-group $rgName `
+  --template-file $templateFile `
+  --parameters `
+    "nameSuffix=$nameSuffix" `
+    "appNamePrefix=$appNamePrefix" `
+    "semVer=$semVer" `
+    "sqlAdministratorPassword=$sqlAdministratorPassword" `
+    "acrName=$acrName" `
+    "acrUrl=$acrUrl" `
+    "acrResourceGroupName=$acrResourceGroupName" `
+    "executorSecurityPrincipal=$executorSecurityPrincipal"

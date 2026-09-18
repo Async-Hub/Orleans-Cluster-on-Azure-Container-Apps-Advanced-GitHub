@@ -23,12 +23,12 @@
     <PackageReference Include="Bogus" Version="35.6.5" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="3.1.2" />
-    <PackageReference Include="Microsoft.Orleans.Clustering.AzureStorage" Version="10.3.0" />
-    <PackageReference Include="Microsoft.Orleans.Persistence.AdoNet" Version="10.3.0" />
-    <PackageReference Include="Microsoft.Orleans.Persistence.AzureStorage" Version="10.3.0" />
-    <PackageReference Include="Microsoft.Orleans.Server" Version="10.3.0" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.AzureStorage" Version="10.3.1" />
+    <PackageReference Include="Microsoft.Orleans.Persistence.AdoNet" Version="10.3.1" />
+    <PackageReference Include="Microsoft.Orleans.Persistence.AzureStorage" Version="10.3.1" />
+    <PackageReference Include="Microsoft.Orleans.Server" Version="10.3.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0" />
     <PackageReference Include="OpenTelemetry.Api" Version="1.18.0" />
   </ItemGroup>
 
